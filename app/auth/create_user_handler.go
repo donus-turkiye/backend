@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"github.com/donus-turkiye/backend/domain"
+	"go.uber.org/zap"
 )
 
 type CreateUserRequest struct {
@@ -10,13 +11,13 @@ type CreateUserRequest struct {
 	Email      string `json:"email"`
 	Password   string `json:"password"`
 	RoleId     int    `json:"role_id"`
-	TelNumber  int    `json:"tel_number"`
+	TelNumber  string `json:"tel_number"`
 	Address    string `json:"address"`
 	Coordinate string `json:"coordinate"`
 }
 
 type CreateUserResponse struct {
-	ID string `json:"id"`
+	ID int `json:"id"`
 }
 
 type CreateUserHandler struct {
@@ -40,11 +41,12 @@ func (h *CreateUserHandler) Handle(ctx context.Context, req *CreateUserRequest) 
 		Address:    req.Address,
 		Coordinate: req.Coordinate,
 	}
-
+	zap.L().Info("User", zap.Any("user", user))
 	userId, err := h.repository.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err
 	}
+	zap.L().Info("User created", zap.Any("userId", userId))
 
-	return &CreateUserResponse{ID: string(userId)}, nil
+	return &CreateUserResponse{ID: userId}, nil
 }
