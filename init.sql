@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     full_name VARCHAR NOT NULL,
     password_hash VARCHAR NOT NULL,
-    tel_no INT UNIQUE NOT NULL,
+    tel_no VARCHAR(11) UNIQUE NOT NULL,
     mail VARCHAR UNIQUE NOT NULL,
     role_id INT REFERENCES roles(role_id) ON DELETE SET NULL,
     adress VARCHAR,
@@ -52,3 +52,8 @@ CREATE TABLE IF NOT EXISTS calender (
     date DATE NOT NULL,
     hour TIME NOT NULL
 );
+
+INSERT INTO roles (role_id, name) VALUES
+    (1, 'admin'),
+    (2, 'customer'),
+    (3, 'staff');
