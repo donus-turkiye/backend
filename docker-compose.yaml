@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - backend
+
+#  app:
+#    build: .
+#    container_name: golang_app
+#    restart: always
+#    depends_on:
+#      - db
+#    environment:
+#      DB_HOST: db
+#      DB_PORT: 5432
+#      DB_USER: ${POSTGRES_USER}
+#      DB_PASSWORD: ${POSTGRES_PASSWORD}
+#      DB_NAME: ${POSTGRES_DB}
+#    ports:
+#      - "8080:8080"
+#    networks:
+#      - backend
+#    volumes:
+#      - .:/app
+#    working_dir: /app
+#    command: go run main.go
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:

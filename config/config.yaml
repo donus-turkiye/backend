@@ -1,0 +1,7 @@
+port: 8080
+db_host: "localhost"
+db_port: "5433"
+db_user: "your_user"
+db_password: "your_password"
+db_name: "donusturkiye"
+ssl_mode: "disable"
