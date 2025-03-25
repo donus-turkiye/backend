@@ -1,18 +1,14 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/donus-turkiye/backend/app/auth"
-	"github.com/donus-turkiye/backend/app/healthcheck"
 	"github.com/donus-turkiye/backend/infra/postgres"
-	"github.com/go-playground/validator/v10"
+	"github.com/donus-turkiye/backend/server"
 	_ "github.com/lib/pq"
 
 	"github.com/donus-turkiye/backend/pkg/config"
@@ -20,69 +16,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
-
-type Request any
-type Response any
-
-// Define an interface for handlers
-type HandlerInterface[R Request, Res Response] interface {
-	Handle(ctx context.Context, req *R) (*Res, error)
-}
-
-// Update handle function to accept HandlerInterface instead of Handler function
-func handle[R Request, Res Response](handler HandlerInterface[R, Res]) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		var req R
-
-		if err := c.BodyParser(&req); err != nil && !errors.Is(err, fiber.ErrUnprocessableEntity) {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		if err := c.ParamsParser(&req); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		if err := c.QueryParser(&req); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		if err := c.ReqHeaderParser(&req); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		/*
-			ctx, cancel := context.WithTimeout(c.UserContext(), 3*time.Second)
-			defer cancel()
-		*/
-
-		// Validate request
-		validate := c.Locals("validator").(*validator.Validate)
-		if err := validate.Struct(req); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error":   "Validation failed",
-				"details": err.Error(),
-			})
-		}
-
-		ctx := c.UserContext()
-
-		// log the client and request
-		zap.L().Info("Request Received", zap.Any("details", map[string]interface{}{
-			"request":           req,
-			"client_ip":         c.IP(),
-			"client_user_agent": c.Get("User-Agent"),
-		}))
-
-		// Handle request
-		res, err := handler.Handle(ctx, &req)
-		if err != nil {
-			zap.L().Error("Failed to handle request", zap.Error(err))
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		return c.JSON(res)
-	}
-}
 
 func main() {
 	// config
@@ -92,21 +25,6 @@ func main() {
 
 	zap.L().Info("app starting...")
 	zap.L().Info("app config", zap.Any("appConfig", appConfig))
-	fmt.Println(appConfig)
-
-	app := fiber.New(fiber.Config{
-		IdleTimeout:  5 * time.Second,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		Concurrency:  256 * 1024,
-	})
-
-	// Add validator middleware
-	validate := validator.New()
-	app.Use(func(c *fiber.Ctx) error {
-		c.Locals("validator", validate)
-		return c.Next()
-	})
 
 	// Connect to DB
 	repo, err := postgres.NewPgRepository(appConfig)
@@ -115,16 +33,12 @@ func main() {
 		zap.L().Fatal("Failed to connect to DB:", zap.Error(err))
 	}
 
-	// Define handlers
-	healthcheckHandler := healthcheck.NewHealthCheckHandler()
-	registerHandler := auth.NewRegisterHandler(repo)
-
-	app.Get("/healthcheck", handle[healthcheck.HealthCheckRequest, healthcheck.HealthCheckResponse](healthcheckHandler))
-	app.Post("/users", handle[auth.RegisterRequest, auth.RegisterResponse](registerHandler))
-
+	server := &server.Server{}
+	server.NewServer(repo)
+	
 	// Start server in a goroutine
 	go func() {
-		if err = app.Listen(fmt.Sprintf("0.0.0.0:%s", appConfig.Port)); err != nil {
+		if err := server.Start(appConfig.Port); err != nil {
 			zap.L().Error("Failed to start server", zap.Error(err))
 			os.Exit(1)
 		}
@@ -132,7 +46,7 @@ func main() {
 
 	zap.L().Info("Server started on port", zap.String("port", appConfig.Port))
 
-	gracefulShutdown(app)
+	gracefulShutdown(server.App)
 }
 
 func gracefulShutdown(app *fiber.App) {
