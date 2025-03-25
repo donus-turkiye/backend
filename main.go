@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/donus-turkiye/backend/app/auth"
-	"github.com/donus-turkiye/backend/app/healthcheck"
-	"github.com/donus-turkiye/backend/infra/postgres"
-	_ "github.com/lib/pq"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/donus-turkiye/backend/app/auth"
+	"github.com/donus-turkiye/backend/app/healthcheck"
+	"github.com/donus-turkiye/backend/infra/postgres"
+	_ "github.com/lib/pq"
+
 	"github.com/donus-turkiye/backend/pkg/config"
+	_ "github.com/donus-turkiye/backend/pkg/log"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -67,10 +69,8 @@ func handle[R Request, Res Response](handler HandlerInterface[R, Res]) fiber.Han
 func main() {
 	// config
 	appConfig := config.Read()
-	// logger
-	logger, _ := zap.NewProduction()
-	zap.ReplaceGlobals(logger)
-	defer logger.Sync()
+
+	defer zap.L().Sync()
 
 	zap.L().Info("app starting...")
 	zap.L().Info("app config", zap.Any("appConfig", appConfig))
