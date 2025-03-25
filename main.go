@@ -12,6 +12,7 @@ import (
 	"github.com/donus-turkiye/backend/app/auth"
 	"github.com/donus-turkiye/backend/app/healthcheck"
 	"github.com/donus-turkiye/backend/infra/postgres"
+	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
 
 	"github.com/donus-turkiye/backend/pkg/config"
@@ -54,8 +55,25 @@ func handle[R Request, Res Response](handler HandlerInterface[R, Res]) fiber.Han
 			defer cancel()
 		*/
 
+		// Validate request
+		validate := c.Locals("validator").(*validator.Validate)
+		if err := validate.Struct(req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   "Validation failed",
+				"details": err.Error(),
+			})
+		}
+
 		ctx := c.UserContext()
 
+		// log the client and request
+		zap.L().Info("Request Received", zap.Any("details", map[string]interface{}{
+			"request":           req,
+			"client_ip":         c.IP(),
+			"client_user_agent": c.Get("User-Agent"),
+		}))
+
+		// Handle request
 		res, err := handler.Handle(ctx, &req)
 		if err != nil {
 			zap.L().Error("Failed to handle request", zap.Error(err))
@@ -81,6 +99,13 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		Concurrency:  256 * 1024,
+	})
+
+	// Add validator middleware
+	validate := validator.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("validator", validate)
+		return c.Next()
 	})
 
 	// Connect to DB
