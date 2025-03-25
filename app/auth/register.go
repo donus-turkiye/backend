@@ -2,19 +2,22 @@ package auth
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/donus-turkiye/backend/app"
 	"github.com/donus-turkiye/backend/domain"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RegisterRequest struct {
-	FullName   string `json:"full_name"`
-	Email      string `json:"email"`
-	Password   string `json:"password"`
-	RoleId     int    `json:"role_id"`
-	TelNumber  string `json:"tel_number"`
-	Address    string `json:"address"`
-	Coordinate string `json:"coordinate"`
+	FullName   string `json:"full_name" validate:"required"`
+	Email      string `json:"email" validate:"required,email"`
+	Password   string `json:"password" validate:"required,min=6"`
+	RoleId     int    `json:"role_id" validate:"required"`
+	TelNumber  string `json:"tel_number" validate:"required"`
+	Address    string `json:"address" validate:"required"`
+	Coordinate string `json:"coordinate" validate:"required"`
 }
 
 type RegisterResponse struct {
@@ -42,12 +45,45 @@ func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*Re
 		Address:    req.Address,
 		Coordinate: req.Coordinate,
 	}
-	zap.L().Info("User", zap.Any("user", user))
-	userId, err := h.repository.CreateUser(ctx, user)
+
+	userId, err := h.register(ctx, user)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to register user: %w", err)
 	}
-	zap.L().Info("User created", zap.Any("userId", userId))
+
+	zap.L().Info("User registered", zap.Int("user_id", userId))
 
 	return &RegisterResponse{ID: userId}, nil
+}
+
+func (h *RegisterHandler) register(ctx context.Context, user *domain.User) (int, error) {
+
+	var err error
+	user.Password, err = hashPassword(user.Password)
+	if err != nil {
+		return 0, err
+	}
+
+	// Check if user already exists
+	_, err = h.repository.GetUserByEmail(ctx, user.Email)
+	if err == nil {
+		return 0, fmt.Errorf("user already exists")
+	}
+
+	userId, err := h.repository.CreateUser(ctx, user)
+	if err != nil {
+		return 0, err
+	}
+
+	return userId, nil
+}
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
