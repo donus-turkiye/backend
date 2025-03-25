@@ -89,14 +89,13 @@ func main() {
 		fmt.Println(err)
 		zap.L().Fatal("Failed to connect to DB:", zap.Error(err))
 	}
-	_ = repo
 
 	// Define handlers
 	healthcheckHandler := healthcheck.NewHealthCheckHandler()
-	createUserHandler := auth.NewCreateUserHandler(repo)
+	registerHandler := auth.NewRegisterHandler(repo)
 
 	app.Get("/healthcheck", handle[healthcheck.HealthCheckRequest, healthcheck.HealthCheckResponse](healthcheckHandler))
-	app.Post("/users", handle[auth.CreateUserRequest, auth.CreateUserResponse](createUserHandler))
+	app.Post("/users", handle[auth.RegisterRequest, auth.RegisterResponse](registerHandler))
 
 	// Start server in a goroutine
 	go func() {
