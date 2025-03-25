@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/donus-turkiye/backend/domain"
 	"github.com/donus-turkiye/backend/pkg/config"
 )
@@ -30,7 +31,7 @@ func NewPgRepository(cfg *config.AppConfig) (*PgRepository, error) {
 	return &PgRepository{db: db}, nil
 }
 
-func (p PgRepository) CreateUser(ctx context.Context, user *domain.User) (int, error) {
+func (p *PgRepository) CreateUser(ctx context.Context, user *domain.User) (int, error) {
 	var userID int
 
 	err := p.db.QueryRowContext(
@@ -46,4 +47,21 @@ func (p PgRepository) CreateUser(ctx context.Context, user *domain.User) (int, e
 	}
 
 	return userID, nil
+}
+
+func (p *PgRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	var user domain.User
+
+	err := p.db.QueryRowContext(
+		ctx,
+		`SELECT user_id, full_name, mail, password_hash, role_id, tel_no, adress, coordinate, wallet, total_recycle_count
+		 FROM users WHERE mail = $1`,
+		email,
+	).Scan(&user.Id, &user.FullName, &user.Email, &user.Password, &user.RoleId, &user.TelNumber, &user.Address, &user.Coordinate, &user.Wallet, &user.TotalRecycleCount)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
+	}
+
+	return &user, nil
 }
