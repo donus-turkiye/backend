@@ -1,6 +1,9 @@
 package healthcheck
 
-import "context"
+import (
+	"context"
+	"net/http"
+)
 
 type HealthCheckRequest struct {
 }
@@ -16,6 +19,6 @@ func NewHealthCheckHandler() *HealthCheckHandler {
 	return &HealthCheckHandler{}
 }
 
-func (h *HealthCheckHandler) Handle(ctx context.Context, req *HealthCheckRequest) (*HealthCheckResponse, error) {
-	return &HealthCheckResponse{Status: "OK"}, nil
+func (h *HealthCheckHandler) Handle(ctx context.Context, req *HealthCheckRequest) (*HealthCheckResponse, int, error) {
+	return &HealthCheckResponse{Status: "OK"}, http.StatusOK, nil
 }

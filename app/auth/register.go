@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/donus-turkiye/backend/app"
 	"github.com/donus-turkiye/backend/domain"
@@ -34,7 +35,7 @@ func NewRegisterHandler(repository app.Repository) *RegisterHandler {
 	}
 }
 
-func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
+func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*RegisterResponse, int, error) {
 
 	user := &domain.User{
 		FullName:   req.FullName,
@@ -48,12 +49,12 @@ func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*Re
 
 	userId, err := h.register(ctx, user)
 	if err != nil {
-		return nil, fmt.Errorf("failed to register user: %w", err)
+		return nil, http.StatusInternalServerError, fmt.Errorf("failed to register user: %w", err) // TODO: Check error type
 	}
 
 	zap.L().Info("User registered", zap.Int("user_id", userId))
 
-	return &RegisterResponse{ID: userId}, nil
+	return &RegisterResponse{ID: userId}, http.StatusOK, nil
 }
 
 func (h *RegisterHandler) register(ctx context.Context, user *domain.User) (int, error) {
