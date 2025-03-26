@@ -35,6 +35,16 @@ func NewRegisterHandler(repository app.Repository) *RegisterHandler {
 	}
 }
 
+// @Summary Register a new user
+// @Description Register a new user in the system
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Register Request"
+// @Success 200 {object} RegisterResponse
+// @Failure 400 {object} error
+// @Failure 500 {object} error
+// @Router /user [post]
 func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*RegisterResponse, int, error) {
 
 	user := &domain.User{

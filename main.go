@@ -11,6 +11,7 @@ import (
 	"github.com/donus-turkiye/backend/server"
 	_ "github.com/lib/pq"
 
+	_ "github.com/donus-turkiye/backend/docs" // swagger docs
 	"github.com/donus-turkiye/backend/pkg/config"
 	_ "github.com/donus-turkiye/backend/pkg/log"
 	"github.com/gofiber/fiber/v2"
@@ -35,7 +36,7 @@ func main() {
 
 	server := &server.Server{}
 	server.NewServer(repo)
-	
+
 	// Start server in a goroutine
 	go func() {
 		if err := server.Start(appConfig.Port); err != nil {

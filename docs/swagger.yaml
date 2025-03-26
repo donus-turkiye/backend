@@ -1,0 +1,78 @@
+basePath: /
+definitions:
+  auth.RegisterRequest:
+    properties:
+      address:
+        type: string
+      coordinate:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      role_id:
+        type: integer
+      tel_number:
+        type: string
+    required:
+    - address
+    - coordinate
+    - email
+    - full_name
+    - password
+    - role_id
+    - tel_number
+    type: object
+  auth.RegisterResponse:
+    properties:
+      id:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: gulermelihemre@gmail.com
+    name: API Support
+  description: This is a sample server for Donus Turkiye.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Donus Turkiye API
+  version: "1.0"
+paths:
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user in the system
+      parameters:
+      - description: Register Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.RegisterResponse'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Register a new user
+      tags:
+      - auth
+schemes:
+- http
+- https
+swagger: "2.0"
