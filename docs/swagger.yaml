@@ -31,6 +31,18 @@ definitions:
       id:
         type: integer
     type: object
+  auth.SessionResponse:
+    properties:
+      user_data:
+        $ref: '#/definitions/domain.UserData'
+    type: object
+  domain.UserData:
+    properties:
+      role_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -44,6 +56,27 @@ info:
   title: Donus Turkiye API
   version: "1.0"
 paths:
+  /session:
+    get:
+      consumes:
+      - application/json
+      description: Get user session data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.SessionResponse'
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Get user session
+      tags:
+      - auth
   /user:
     post:
       consumes:

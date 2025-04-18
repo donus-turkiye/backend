@@ -20,6 +20,16 @@ type SessionHandler struct {
 func NewSessionHandler() *SessionHandler {
 	return &SessionHandler{}
 }
+
+// @Summary Get user session
+// @Description Get user session data
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} SessionResponse
+// @Failure 401 {object} error
+// @Failure 500 {object} error
+// @Router /session [get]
 func (h *SessionHandler) Handle(ctx context.Context, req *SessionRequest) (*SessionResponse, int, error) {
 	// Get session from context
 	sess, ok := ctx.Value("session").(*session.Session)
