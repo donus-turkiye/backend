@@ -15,19 +15,18 @@ type Server struct {
 }
 
 func (s *Server) NewServer(repo *postgres.PgRepository) {
-	app := fiber.New(fiber.Config{
+	s.App = fiber.New(fiber.Config{
 		IdleTimeout:  5 * time.Second,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		Concurrency:  256 * 1024,
 	})
 
+	// Add session middleware
+	s.App.Use(SessionMiddleware())
 	// Add validator middleware
 	validate := validator.New()
-	app.Use(ValidatorMiddleware(validate))
-
-	// Initialize server instance
-	s.App = app
+	s.App.Use(ValidatorMiddleware(validate))
 
 	// Register routes
 	s.registerRoutes(repo)

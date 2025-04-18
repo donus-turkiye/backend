@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
 	"go.uber.org/zap"
 )
 
@@ -22,6 +23,15 @@ type HandlerInterface[R Request, Res Response] interface {
 func handle[R Request, Res Response](handler HandlerInterface[R, Res]) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req R
+
+		// Read session from context locals
+		sessionData, ok := c.Locals("session").(*session.Session)
+		if !ok {
+			zap.L().Error("Failed to retrieve session from context locals")
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Session not found",
+			})
+		}
 
 		if err := c.BodyParser(&req); err != nil && !errors.Is(err, fiber.ErrUnprocessableEntity) {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -53,7 +63,8 @@ func handle[R Request, Res Response](handler HandlerInterface[R, Res]) fiber.Han
 			})
 		}
 
-		ctx := c.UserContext()
+		// Pass session in context
+		ctx := context.WithValue(c.UserContext(), "session", sessionData)
 
 		// log the client and request
 		zap.L().Info("Request Received", zap.Any("details", map[string]interface{}{
@@ -70,6 +81,14 @@ func handle[R Request, Res Response](handler HandlerInterface[R, Res]) fiber.Han
 			zap.L().Error("Failed to handle request", zap.Error(err))
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": getRootError(err),
+			})
+		}
+
+		// Save session data
+		if err := sessionData.Save(); err != nil {
+			zap.L().Error("Failed to save session", zap.Error(err))
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to save session",
 			})
 		}
 

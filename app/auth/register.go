@@ -2,8 +2,11 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/gofiber/fiber/v2/middleware/session"
 
 	"github.com/donus-turkiye/backend/app"
 	"github.com/donus-turkiye/backend/domain"
@@ -47,6 +50,12 @@ func NewRegisterHandler(repository app.Repository) *RegisterHandler {
 // @Router /user [post]
 func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*RegisterResponse, int, error) {
 
+	// Get session from context
+	sess, ok := ctx.Value("session").(*session.Session)
+	if !ok {
+		return nil, http.StatusInternalServerError, errors.New("session not found from register handler")
+	}
+
 	user := &domain.User{
 		FullName:   req.FullName,
 		Email:      req.Email,
@@ -61,6 +70,11 @@ func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*Re
 	if err != nil {
 		return nil, http.StatusInternalServerError, fmt.Errorf("failed to register user: %w", err) // TODO: Check error type
 	}
+
+	// Set user ID in session
+	sess.Set(string(domain.UserDataKey), &domain.UserData{
+		UserId: userId,
+	})
 
 	zap.L().Info("User registered", zap.Int("user_id", userId))
 
