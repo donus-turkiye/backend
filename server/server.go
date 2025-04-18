@@ -22,6 +22,9 @@ func (s *Server) NewServer(repo *postgres.PgRepository) {
 		Concurrency:  256 * 1024,
 	})
 
+	// Initialize session store with repository
+	initSessionStore(repo)
+
 	// Add session middleware
 	s.App.Use(SessionMiddleware())
 	// Add validator middleware

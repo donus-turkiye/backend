@@ -10,7 +10,8 @@ import (
 )
 
 type PgRepository struct {
-	db *sql.DB
+	db           *sql.DB
+	SessionStore *PostgresStore
 }
 
 func NewPgRepository(cfg *config.AppConfig) (*PgRepository, error) {
@@ -28,7 +29,10 @@ func NewPgRepository(cfg *config.AppConfig) (*PgRepository, error) {
 		return nil, fmt.Errorf("failed to ping db: %w", err)
 	}
 
-	return &PgRepository{db: db}, nil
+	return &PgRepository{
+		db:           db,
+		SessionStore: NewPostgresStore(db),
+	}, nil
 }
 
 func (p *PgRepository) CreateUser(ctx context.Context, user *domain.User) (int, error) {

@@ -45,6 +45,16 @@ func main() {
 		}
 	}()
 
+	// Start session garbage collection in a separate goroutine
+	go func() {
+		ticker := time.NewTicker(6 * time.Hour)
+		for range ticker.C {
+			if err := repo.SessionStore.GC(); err != nil {
+				zap.L().Error("Failed to clean expired sessions", zap.Error(err))
+			}
+		}
+	}()
+
 	zap.L().Info("Server started on port", zap.String("port", appConfig.Port))
 
 	gracefulShutdown(server.App)

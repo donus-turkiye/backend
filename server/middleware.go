@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/donus-turkiye/backend/domain"
+	"github.com/donus-turkiye/backend/infra/postgres"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
@@ -13,11 +14,12 @@ import (
 
 var store *session.Store
 
-func init() {
+func initSessionStore(repo *postgres.PgRepository) {
 	// Register types for session storage
 	gob.Register(domain.UserData{})
 
 	store = session.New(session.Config{
+		Storage:        repo.SessionStore,
 		KeyLookup:      "cookie:session_id",
 		Expiration:     24 * time.Hour,
 		CookieSecure:   true,
@@ -25,7 +27,6 @@ func init() {
 		CookiePath:     "/",
 		CookieDomain:   "",
 		CookieSameSite: "Lax",
-		Storage:        nil,
 	})
 }
 

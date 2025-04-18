@@ -1,3 +1,11 @@
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    data BYTEA NOT NULL,
+    expiry TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+
 CREATE TABLE IF NOT EXISTS roles (
     role_id INT PRIMARY KEY,
     name VARCHAR NOT NULL
