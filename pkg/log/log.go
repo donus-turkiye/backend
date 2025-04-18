@@ -15,7 +15,7 @@ func init() {
 	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
 
 	config := zap.Config{
-		Level:             zap.NewAtomicLevelAt(zap.InfoLevel),
+		Level:             zap.NewAtomicLevelAt(zap.DebugLevel),
 		Development:       false,
 		DisableCaller:     false,
 		DisableStacktrace: false,
