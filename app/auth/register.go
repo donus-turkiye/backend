@@ -2,14 +2,12 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/gofiber/fiber/v2/middleware/session"
-
 	"github.com/donus-turkiye/backend/app"
 	"github.com/donus-turkiye/backend/domain"
+	"github.com/gofiber/fiber/v2/middleware/session"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -51,9 +49,9 @@ func NewRegisterHandler(repository app.Repository) *RegisterHandler {
 func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*RegisterResponse, int, error) {
 
 	// Get session from context
-	sess, ok := ctx.Value("session").(*session.Session)
-	if !ok {
-		return nil, http.StatusInternalServerError, errors.New("session not found from register handler")
+	sess, err := getSessionFromContext(ctx)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
 	}
 
 	user := &domain.User{
@@ -101,6 +99,13 @@ func (h *RegisterHandler) register(ctx context.Context, user *domain.User) (int,
 	}
 
 	return userId, nil
+}
+func getSessionFromContext(ctx context.Context) (*session.Session, error) {
+	sess, ok := ctx.Value("session").(*session.Session)
+	if !ok {
+		return nil, fmt.Errorf("session not found from context")
+	}
+	return sess, nil
 }
 
 func hashPassword(password string) (string, error) {
