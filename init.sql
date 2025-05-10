@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     expiry TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions (expiry);
 
 CREATE TABLE IF NOT EXISTS roles (
     role_id INT PRIMARY KEY,
@@ -61,7 +61,14 @@ CREATE TABLE IF NOT EXISTS calender (
     hour TIME NOT NULL
 );
 
-INSERT INTO roles (role_id, name) VALUES
-    (1, 'admin'),
-    (2, 'customer'),
-    (3, 'staff');
+-- Idempotent INSERT: only insert if role_id does not already exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM roles WHERE role_id = 1) THEN
+        INSERT INTO roles (role_id, name) VALUES
+            (1, 'admin'),
+            (2, 'customer'),
+            (3, 'staff');
+    END IF;
+END
+$$;
