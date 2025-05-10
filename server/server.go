@@ -26,6 +26,7 @@ func (s *Server) NewServer(repo *postgres.PgRepository) {
 	initSessionStore(repo)
 
 	// Add session middleware
+	s.App.Use(SessionHeaderMiddleware())
 	s.App.Use(SessionMiddleware())
 	// Add validator middleware
 	validate := validator.New()

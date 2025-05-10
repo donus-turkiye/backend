@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/gob"
+	"encoding/json"
 	"time"
 
 	"github.com/donus-turkiye/backend/domain"
@@ -20,13 +21,13 @@ func initSessionStore(repo *postgres.PgRepository) {
 
 	store = session.New(session.Config{
 		Storage:        repo.SessionStore,
-		KeyLookup:      "cookie:session_id",
+		KeyLookup:      "header:X-Session-ID", // Changed from cookie to header
 		Expiration:     24 * time.Hour,
-		CookieSecure:   true,
-		CookieHTTPOnly: true,
-		CookiePath:     "/",
-		CookieDomain:   "",
-		CookieSameSite: "Lax",
+		CookieSecure:   false, // Not needed for header based sessions
+		CookieHTTPOnly: false, // Not needed for header based sessions
+		CookiePath:     "",    // Not needed for header based sessions
+		CookieDomain:   "",    // Not needed for header based sessions
+		CookieSameSite: "",    // Not needed for header based sessions
 	})
 }
 
@@ -41,15 +42,14 @@ func ValidatorMiddleware(validate *validator.Validate) fiber.Handler {
 // Middleware function to handle sessions
 func SessionMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-
-		// Log incoming cookie for debugging
-		sessionCookie := c.Cookies("session_id")
-		if sessionCookie != "" {
-			zap.L().Debug("Incoming request cookie",
-				zap.String("session_id", sessionCookie),
+		// Log incoming session header for debugging
+		sessionID := c.Get("X-Session-ID")
+		if sessionID != "" {
+			zap.L().Debug("Incoming request session",
+				zap.String("session_id", sessionID),
 				zap.String("path", c.Path()))
 		} else {
-			zap.L().Debug("Incoming request without session cookie",
+			zap.L().Debug("Incoming request without session",
 				zap.String("path", c.Path()))
 		}
 
@@ -77,5 +77,28 @@ func SessionMiddleware() fiber.Handler {
 
 		// Continue stack
 		return c.Next()
+	}
+}
+
+func SessionHeaderMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Process request
+		err := c.Next()
+		if err != nil {
+			return err
+		}
+
+		// Get session ID from response body
+		var response map[string]interface{}
+		if err := json.Unmarshal(c.Response().Body(), &response); err != nil {
+			return err
+		}
+
+		// If session ID exists in response, set it in next request header
+		if sessionID, ok := response["session_id"].(string); ok {
+			c.Set("X-Session-ID", sessionID)
+		}
+
+		return nil
 	}
 }
