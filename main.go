@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,7 +29,6 @@ func main() {
 	// Connect to DB
 	repo, err := postgres.NewPgRepository(appConfig)
 	if err != nil {
-		fmt.Println(err)
 		zap.L().Fatal("Failed to connect to DB:", zap.Error(err))
 	}
 
