@@ -11,8 +11,9 @@ import (
 )
 
 type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
+	Email     string `json:"email" validate:"omitempty,email,excluded_with=TelNumber"`
+	Password  string `json:"password" validate:"required,min=6"`
+	TelNumber string `json:"tel_number" validate:"omitempty,excluded_with=Email"`
 }
 
 type LoginResponse struct {
@@ -46,7 +47,15 @@ func (h *LoginHandler) Handle(ctx context.Context, req *LoginRequest) (*LoginRes
 		return nil, http.StatusInternalServerError, err
 	}
 
-	user, err := h.repository.GetUserByEmail(ctx, req.Email)
+	var user *domain.User
+
+	// Check login method
+	if req.Email != "" {
+		user, err = h.repository.GetUserByEmail(ctx, req.Email)
+	} else {
+		user, err = h.repository.GetUserByTelNumber(ctx, req.TelNumber)
+	}
+
 	if err != nil {
 		return nil, http.StatusUnauthorized, fmt.Errorf("invalid credentials")
 	}
@@ -58,13 +67,24 @@ func (h *LoginHandler) Handle(ctx context.Context, req *LoginRequest) (*LoginRes
 	// Set user ID in session
 	sess.Set(string(domain.UserDataKey), &domain.UserData{
 		UserId: user.Id,
+		RoleId: user.RoleId,
 	})
 
-	zap.L().Info("User logged in", zap.Int("user_id", user.Id))
+	zap.L().Info("User logged in",
+		zap.Int("user_id", user.Id),
+		zap.String("login_method", getLoginMethod(req)))
 
 	return &LoginResponse{
 			UserData: domain.UserData{
 				UserId: user.Id,
-				RoleId: user.RoleId}},
+				RoleId: user.RoleId,
+			}},
 		http.StatusOK, nil
+}
+
+func getLoginMethod(req *LoginRequest) string {
+	if req.Email != "" {
+		return "email"
+	}
+	return "phone"
 }
