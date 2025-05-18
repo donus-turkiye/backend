@@ -33,19 +33,27 @@ func handle[R Request, Res Response](handler HandlerInterface[R, Res]) fiber.Han
 			})
 		}
 
-		if err := c.BodyParser(&req); err != nil && !errors.Is(err, fiber.ErrUnprocessableEntity) {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		// Parse request body, parameters, query, and headers
+		// parse request body if request method is POST, PUT, or DELETE
+		if c.Method() == fiber.MethodPost || c.Method() == fiber.MethodPut || c.Method() == fiber.MethodDelete {
+			if err := c.BodyParser(&req); err != nil && !errors.Is(err, fiber.ErrUnprocessableEntity) {
+				zap.L().Error("Failed to parse request body", zap.Error(err))
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			}
 		}
 
 		if err := c.ParamsParser(&req); err != nil {
+			zap.L().Error("Failed to parse request parameters", zap.Error(err))
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		if err := c.QueryParser(&req); err != nil {
+			zap.L().Error("Failed to parse request query", zap.Error(err))
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		if err := c.ReqHeaderParser(&req); err != nil {
+			zap.L().Error("Failed to parse request headers", zap.Error(err))
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
