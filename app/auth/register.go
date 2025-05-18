@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/donus-turkiye/backend/app"
+	"github.com/donus-turkiye/backend/app/session"
 	"github.com/donus-turkiye/backend/domain"
-	"github.com/gofiber/fiber/v2/middleware/session"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,9 +22,7 @@ type RegisterRequest struct {
 	Coordinate string `json:"coordinate" validate:"required"`
 }
 
-type RegisterResponse struct {
-	ID int `json:"id"`
-}
+type RegisterResponse struct{}
 
 type RegisterHandler struct {
 	repository app.Repository
@@ -48,12 +46,6 @@ func NewRegisterHandler(repository app.Repository) *RegisterHandler {
 // @Router /user [post]
 func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*RegisterResponse, int, error) {
 
-	// Get session from context
-	sess, err := getSessionFromContext(ctx)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
 	user := &domain.User{
 		FullName:   req.FullName,
 		Email:      req.Email,
@@ -69,14 +61,11 @@ func (h *RegisterHandler) Handle(ctx context.Context, req *RegisterRequest) (*Re
 		return nil, http.StatusInternalServerError, fmt.Errorf("failed to register user: %w", err) // TODO: Check error type
 	}
 
-	// Set user ID in session
-	sess.Set(string(domain.UserDataKey), &domain.UserData{
-		UserId: userId,
-	})
+	session.SetSessionUserData(ctx, user)
 
 	zap.L().Info("User registered", zap.Int("user_id", userId))
 
-	return &RegisterResponse{ID: userId}, http.StatusOK, nil
+	return &RegisterResponse{}, http.StatusOK, nil
 }
 
 func (h *RegisterHandler) register(ctx context.Context, user *domain.User) (int, error) {
@@ -99,13 +88,6 @@ func (h *RegisterHandler) register(ctx context.Context, user *domain.User) (int,
 	}
 
 	return userId, nil
-}
-func getSessionFromContext(ctx context.Context) (*session.Session, error) {
-	sess, ok := ctx.Value("session").(*session.Session)
-	if !ok {
-		return nil, fmt.Errorf("session not found from context")
-	}
-	return sess, nil
 }
 
 func hashPassword(password string) (string, error) {

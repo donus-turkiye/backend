@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/donus-turkiye/backend/app"
+	"github.com/donus-turkiye/backend/app/session"
 	"github.com/donus-turkiye/backend/domain"
 	"go.uber.org/zap"
 )
@@ -41,13 +42,9 @@ func NewLoginHandler(repository app.Repository) *LoginHandler {
 // @Failure 500 {object} error
 // @Router /login [post]
 func (h *LoginHandler) Handle(ctx context.Context, req *LoginRequest) (*LoginResponse, int, error) {
-	// Get session from context
-	sess, err := getSessionFromContext(ctx)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
 
 	var user *domain.User
+	var err error
 
 	// Check login method
 	if req.Email != "" {
@@ -64,11 +61,7 @@ func (h *LoginHandler) Handle(ctx context.Context, req *LoginRequest) (*LoginRes
 		return nil, http.StatusUnauthorized, fmt.Errorf("invalid credentials")
 	}
 
-	// Set user ID in session
-	sess.Set(string(domain.UserDataKey), &domain.UserData{
-		UserId: user.Id,
-		RoleId: user.RoleId,
-	})
+	session.SetSessionUserData(ctx, user)
 
 	zap.L().Info("User logged in",
 		zap.Int("user_id", user.Id),
