@@ -86,3 +86,20 @@ func (p *PgRepository) GetUserByTelNumber(ctx context.Context, telNumber string)
 
 	return &user, nil
 }
+
+func (p *PgRepository) GetUserById(ctx context.Context, id int) (*domain.User, error) {
+	var user domain.User
+
+	err := p.db.QueryRowContext(
+		ctx,
+		`SELECT user_id, full_name, mail, role_id, tel_no, adress, coordinate, wallet, total_recycle_count
+		 FROM users WHERE user_id = $1`,
+		id,
+	).Scan(&user.Id, &user.FullName, &user.Email, &user.RoleId, &user.TelNumber, &user.Address, &user.Coordinate, &user.Wallet, &user.TotalRecycleCount)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user by id: %w", err)
+	}
+
+	return &user, nil
+}
