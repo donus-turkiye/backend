@@ -103,3 +103,28 @@ func (p *PgRepository) GetUserById(ctx context.Context, id int) (*domain.User, e
 
 	return &user, nil
 }
+
+func (p *PgRepository) GetCategories(ctx context.Context) ([]domain.Category, error) {
+	var categories []domain.Category
+
+	rows, err := p.db.QueryContext(ctx, `SELECT category_id, waste_type, unit_type FROM category`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query categories: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var category domain.Category
+		if err := rows.Scan(&category.CategoryId, &category.WasteType, &category.UnitType); err != nil {
+			return nil, fmt.Errorf("failed to scan category: %w", err)
+		}
+		categories = append(categories, category)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over categories: %w", err)
+	}
+	if len(categories) == 0 {
+		return nil, fmt.Errorf("no categories found")
+	}
+
+	return categories, nil
+}
