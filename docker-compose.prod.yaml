@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  app:
+    image: melihguler/donusturkiye:latest
+    container_name: golang_app
+    restart: always
+    environment:
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+    command: ./main
+
+networks:
+  backend:
