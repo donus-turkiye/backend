@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: melihemreguler/donusturkiye-backend:latest
+    image: melihguler/donusturkiye:${TAG}
     container_name: golang_app
     restart: always
     environment:
