@@ -5,7 +5,7 @@ on:
     branches: [prod]
 
 env:
-  IMAGE_NAME: melihguler/donusturkiye
+  IMAGE_NAME: melihemreguler/donusturkiye-backend
 
 jobs:
   build-and-deploy:
