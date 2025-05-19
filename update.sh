@@ -1,8 +1,9 @@
 #!/bin/bash
-
+set -e
 cd ~/backend
-docker compose -f docker-compose.prod.yaml --env-file .env pull
-docker compose -f docker-compose.prod.yaml --env-file .env down
-docker compose -f docker-compose.prod.yaml --env-file .env up -d
+cat .env
+docker compose -f docker-compose.prod.yaml --env-file .env.prod pull
+docker compose -f docker-compose.prod.yaml --env-file .env.prod down
+docker compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 
 echo "Backend updated successfully."
