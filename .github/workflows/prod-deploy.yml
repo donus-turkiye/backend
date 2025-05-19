@@ -45,5 +45,5 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/backend
-            echo "TAG=${{ steps.vars.outputs.sha_short }}" > .env
+            echo "TAG=${{ steps.vars.outputs.sha_short }}" | cat - .env.prod > temp && mv temp .env.prod
             bash update.sh
